@@ -1,0 +1,219 @@
+# Home Assistant Configuration for Nokia FastMile 5G Receiver Monitoring
+# Add this to your configuration.yaml file
+
+# Command line sensors to get all device statistics
+command_line:
+  - sensor:
+      name: "Nokia FastMile Status"
+      command: "python3 /home/daniel/NokiaFastMile/nokia_fastmile_monitor.py 2>/dev/null | grep -A 500 'JSON OUTPUT' | tail -n +3"
+      scan_interval: 60  # Update every 60 seconds
+      value_template: "{{ value_json | default({}) }}"
+      json_attributes:
+        - device_info
+        - wan_info
+        - cellular_stats
+        - connected_devices
+
+# Individual sensors for device information
+sensor:
+  - platform: template
+    sensors:
+      nokia_model:
+        friendly_name: "Device Model"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'device_info') %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'device_info')['ModelName'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:router-wireless
+
+      nokia_firmware:
+        friendly_name: "Firmware Version"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'device_info') %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'device_info')['SoftwareVersion'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:package-variant
+
+      nokia_uptime:
+        friendly_name: "Uptime"
+        unit_of_measurement: "seconds"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'device_info') %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'device_info')['UpTime'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:clock-outline
+
+      nokia_uptime_formatted:
+        friendly_name: "Uptime (Formatted)"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'device_info') %}
+            {% set uptime = state_attr('sensor.nokia_fastmile_status', 'device_info')['UpTime'] | int %}
+            {% set days = (uptime / 86400) | int %}
+            {% set hours = ((uptime % 86400) / 3600) | int %}
+            {% set minutes = ((uptime % 3600) / 60) | int %}
+            {{ days }}d {{ hours }}h {{ minutes }}m
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:clock-outline
+
+      # WAN Connection sensors
+      nokia_wan_status:
+        friendly_name: "WAN Status"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'wan_info') and state_attr('sensor.nokia_fastmile_status', 'wan_info')['connection'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'wan_info')['connection']['ConnectionStatus'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: >
+          {% set status = state_attr('sensor.nokia_fastmile_status', 'wan_info')['connection']['ConnectionStatus'] if state_attr('sensor.nokia_fastmile_status', 'wan_info') and state_attr('sensor.nokia_fastmile_status', 'wan_info')['connection'] else '' %}
+          {% if status == 'Connected' %}
+            mdi:check-network
+          {% else %}
+            mdi:close-network
+          {% endif %}
+
+      nokia_external_ip:
+        friendly_name: "External IP Address"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'wan_info') and state_attr('sensor.nokia_fastmile_status', 'wan_info')['connection'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'wan_info')['connection']['ExternalIPAddress'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:ip-network
+
+      nokia_gateway:
+        friendly_name: "Gateway"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'wan_info') and state_attr('sensor.nokia_fastmile_status', 'wan_info')['connection'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'wan_info')['connection']['DefaultGateway'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:router
+
+      # 5G Cellular sensors
+      nokia_5g_rsrp:
+        friendly_name: "5G RSRP"
+        unit_of_measurement: "dBm"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'cellular_stats') and state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g']['RSRPCurrent'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:signal-cellular-3
+
+      nokia_5g_rsrq:
+        friendly_name: "5G RSRQ"
+        unit_of_measurement: "dB"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'cellular_stats') and state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g']['RSRQCurrent'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:signal-cellular-3
+
+      nokia_5g_snr:
+        friendly_name: "5G SNR"
+        unit_of_measurement: "dB"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'cellular_stats') and state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g']['SNRCurrent'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:signal-variant
+
+      nokia_5g_signal_strength:
+        friendly_name: "5G Signal Strength"
+        unit_of_measurement: "/5"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'cellular_stats') and state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g']['SignalStrengthLevel'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'cellular_stats') and state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g'] %}
+            {% set strength = state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['5g']['SignalStrengthLevel'] | default(0) %}
+            {% if strength >= 4 %}
+              mdi:signal-cellular-3
+            {% elif strength >= 3 %}
+              mdi:signal-cellular-2
+            {% elif strength >= 2 %}
+              mdi:signal-cellular-1
+            {% else %}
+              mdi:signal-cellular-outline
+            {% endif %}
+          {% else %}
+            mdi:signal-cellular-outline
+          {% endif %}
+
+      # LTE/4G Cellular sensors
+      nokia_lte_rssi:
+        friendly_name: "LTE RSSI"
+        unit_of_measurement: "dBm"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'cellular_stats') and state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['lte'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['lte']['RSSICurrent'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:signal-4g
+
+      nokia_lte_rsrp:
+        friendly_name: "LTE RSRP"
+        unit_of_measurement: "dBm"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'cellular_stats') and state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['lte'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['lte']['RSRPCurrent'] %}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:signal-4g
+
+      nokia_lte_snr:
+        friendly_name: "LTE SNR"
+        unit_of_measurement: "dB"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'cellular_stats') and state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['lte'] %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'cellular_stats')['lte']['SNRCurrent'] }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon_template: mdi:signal-variant
+
+      nokia_connected_devices_count:
+        friendly_name: "Connected Devices"
+        unit_of_measurement: "devices"
+        value_template: >
+          {% if state_attr('sensor.nokia_fastmile_status', 'connected_devices') %}
+            {{ state_attr('sensor.nokia_fastmile_status', 'connected_devices') | length }}
+          {% else %}
+            0
+          {% endif %}
+        icon_template: mdi:devices
+
+# Button to reboot the device
+button:
+  - platform: template
+    buttons:
+      nokia_fastmile_reboot:
+        friendly_name: "Reboot Nokia FastMile"
+        icon_template: mdi:restart
+        press:
+          - service: shell_command.reboot_nokia_fastmile
+
+# Shell command for rebooting
+shell_command:
+  reboot_nokia_fastmile: "echo 'yes' | python3 /home/daniel/NokiaFastMile/nokia_fastmile_reboot.py"

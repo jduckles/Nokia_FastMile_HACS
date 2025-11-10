@@ -1,0 +1,7 @@
+{
+  "name": "Nokia FastMile 5G",
+  "render_readme": true,
+  "domains": ["sensor", "button"],
+  "iot_class": "Local Polling",
+  "homeassistant": "2023.1.0"
+}

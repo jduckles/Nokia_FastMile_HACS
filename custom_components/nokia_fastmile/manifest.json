@@ -1,0 +1,11 @@
+{
+  "domain": "nokia_fastmile",
+  "name": "Nokia FastMile 5G",
+  "codeowners": ["@yourusername"],
+  "config_flow": true,
+  "documentation": "https://github.com/yourusername/nokia-fastmile-ha",
+  "issue_tracker": "https://github.com/yourusername/nokia-fastmile-ha/issues",
+  "requirements": ["requests>=2.31.0"],
+  "version": "1.0.0",
+  "iot_class": "local_polling"
+}
