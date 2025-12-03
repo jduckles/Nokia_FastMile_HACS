@@ -5,9 +5,47 @@ Sends a reboot command to the Nokia FastMile device
 """
 
 import requests
-from requests.auth import HTTPBasicAuth
 import sys
 import time
+
+
+def login_and_get_session(host: str, username: str, password: str) -> requests.Session:
+    """
+    Login to the device and return a session with cookies.
+
+    Args:
+        host: IP address of the Nokia FastMile device
+        username: Admin username
+        password: Admin password
+
+    Returns:
+        requests.Session with authentication cookies
+    """
+    session = requests.Session()
+    base_url = f"http://{host}"
+
+    # Attempt login to get session cookie
+    login_url = f"{base_url}/login_web_app.cgi"
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json, text/plain, */*",
+    }
+    login_data = {
+        "name": username,
+        "pswd": password,
+    }
+
+    try:
+        response = session.post(login_url, data=login_data, headers=headers, timeout=10)
+        if response.status_code == 200:
+            print("Login successful")
+        else:
+            print(f"Login returned status {response.status_code}, continuing anyway...")
+    except requests.exceptions.RequestException as e:
+        print(f"Login attempt failed: {e}, continuing anyway...")
+
+    return session
+
 
 def reboot_device(host: str = "192.168.192.1", username: str = "admin", password: str = ""):
     """
@@ -24,38 +62,64 @@ def reboot_device(host: str = "192.168.192.1", username: str = "admin", password
     print(f"Attempting to reboot Nokia FastMile at {host}...")
 
     try:
-        url = f"http://{host}/command_web_app.cgi"
-        auth = HTTPBasicAuth(username, password)
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        # Get authenticated session
+        session = login_and_get_session(host, username, password)
+        base_url = f"http://{host}"
 
-        # Try the command endpoint first
-        data = {"action": "reboot"}
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json, text/plain, */*",
+            "Origin": base_url,
+            "Referer": f"{base_url}/",
+        }
 
-        print("Sending reboot command...")
-        response = requests.post(url, data=data, headers=headers, auth=auth, timeout=10)
+        # Method 1: Try reboot_web_app.cgi (matches web UI)
+        url = f"{base_url}/reboot_web_app.cgi"
+        data = {"Page": "REBOOT", "Action": "Reboot"}
 
-        # Check if request was accepted
-        if response.status_code in [200, 202, 204]:
-            print("Reboot command sent successfully!")
-            print("The device will reboot in a few seconds and will be unavailable for approximately 1-2 minutes.")
-            return True
-        else:
-            # Try alternative endpoint
-            print(f"First attempt got status {response.status_code}, trying alternative method...")
-            url = f"http://{host}/reboot_web_app.cgi"
-            data = {"Page": "REBOOT", "Action": "Reboot"}
-            response = requests.post(url, data=data, headers=headers, auth=auth, timeout=10)
+        print("Sending reboot command via reboot_web_app.cgi...")
+        response = session.post(url, data=data, headers=headers, timeout=30)
 
-            if response.status_code in [200, 202, 204, 500]:  # 500 might indicate device is rebooting
-                print("Reboot command sent successfully!")
-                print("The device will reboot in a few seconds and will be unavailable for approximately 1-2 minutes.")
+        if response.status_code == 200:
+            response_text = response.text
+            if 'encrypted=1' in response_text:
+                print("Reboot command accepted (encrypted response received)")
+                print("The device will reboot shortly and be unavailable for 1-2 minutes.")
                 return True
-            else:
-                print(f"Failed to send reboot command. Status code: {response.status_code}")
-                return False
+            print("Reboot command sent successfully!")
+            print("The device will reboot shortly and be unavailable for 1-2 minutes.")
+            return True
+
+        # Method 2: Try command_web_app.cgi
+        print(f"First attempt got status {response.status_code}, trying command endpoint...")
+        url = f"{base_url}/command_web_app.cgi"
+        data = {"action": "reboot"}
+        response = session.post(url, data=data, headers=headers, timeout=30)
+
+        if response.status_code in [200, 202, 204]:
+            print("Reboot command sent successfully via command endpoint!")
+            print("The device will reboot shortly and be unavailable for 1-2 minutes.")
+            return True
+
+        # Method 3: Try maintenance endpoint
+        print("Trying maintenance endpoint...")
+        url = f"{base_url}/maintenance_web_app.cgi"
+        data = {"action": "reboot", "type": "system"}
+        response = session.post(url, data=data, headers=headers, timeout=30)
+
+        if response.status_code in [200, 202, 204]:
+            print("Reboot command sent via maintenance endpoint!")
+            print("The device will reboot shortly and be unavailable for 1-2 minutes.")
+            return True
+
+        print(f"All reboot attempts failed. Last status code: {response.status_code}")
+        return False
 
     except requests.exceptions.Timeout:
         print("Request timed out - the device may be rebooting already.")
+        return True
+    except requests.exceptions.ConnectionError:
+        print("Connection lost - the device may be rebooting.")
         return True
     except requests.exceptions.RequestException as e:
         print(f"Error sending reboot command: {e}")
