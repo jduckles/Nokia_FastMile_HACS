@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "UniFi Controller",
+        "description": "Enter your UniFi controller details. {api_key_info}",
+        "data": {
+          "host": "Controller IP Address",
+          "api_key": "API Key",
+          "port": "Port",
+          "site": "Site Name"
+        },
+        "data_description": {
+          "host": "IP address or hostname of your UniFi controller (e.g., 10.1.10.1)",
+          "api_key": "API key created in UniFi Settings → Admins & Users → API Keys",
+          "port": "Controller port (default: 443)",
+          "site": "Site name (default: 'default')"
+        }
+      },
+      "device": {
+        "title": "Select Switch and Port",
+        "description": "Select the switch and port to control. {port_info}",
+        "data": {
+          "switch_mac": "Switch",
+          "port_number": "Port Number",
+          "port_name": "Port Name"
+        },
+        "data_description": {
+          "switch_mac": "Select the UniFi switch",
+          "port_number": "The port number to control (1-48)",
+          "port_name": "A friendly name for this port (e.g., 'Telia FWA')"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the UniFi controller. Check the host and API key.",
+      "no_poe_devices": "No devices with PoE-capable ports found on this controller.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This port is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "UniFi PoE Options",
+        "data": {
+          "port_name": "Port Name"
+        }
+      }
+    }
+  }
+}
