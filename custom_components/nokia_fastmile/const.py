@@ -2,11 +2,6 @@
 
 DOMAIN = "nokia_fastmile"
 
-# Configuration
-CONF_HOST = "host"
-CONF_USERNAME = "username"
-CONF_PASSWORD = "password"
-
 # Default values
 DEFAULT_HOST = "192.168.192.1"
 DEFAULT_USERNAME = "admin"

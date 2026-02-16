@@ -5,6 +5,7 @@ import logging
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -51,7 +52,7 @@ class NokiaFastMileButton(ButtonEntity):
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": f"Nokia FastMile ({entry.data.get('host')})",
+            "name": f"Nokia FastMile ({entry.data.get(CONF_HOST)})",
             "manufacturer": "Nokia",
             "model": coordinator.data.get("device_info", {}).get("ModelName", "FastMile 5G Receiver") if coordinator.data.get("device_info") else "FastMile 5G Receiver",
             "sw_version": coordinator.data.get("device_info", {}).get("SoftwareVersion") if coordinator.data.get("device_info") else None,

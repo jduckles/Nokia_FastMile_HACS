@@ -14,6 +14,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    CONF_HOST,
     SIGNAL_STRENGTH_DECIBELS,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     UnitOfTime,
@@ -209,7 +210,7 @@ class NokiaFastMileSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": f"Nokia FastMile ({entry.data.get('host')})",
+            "name": f"Nokia FastMile ({entry.data.get(CONF_HOST)})",
             "manufacturer": "Nokia",
             "model": coordinator.data.get("device_info", {}).get("ModelName", "FastMile 5G Receiver") if coordinator.data.get("device_info") else "FastMile 5G Receiver",
             "sw_version": coordinator.data.get("device_info", {}).get("SoftwareVersion") if coordinator.data.get("device_info") else None,
